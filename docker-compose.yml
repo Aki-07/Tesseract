@@ -1,0 +1,22 @@
+version: "3.9"
+
+services:
+  inference:
+    build:
+      context: .
+      dockerfile: inference/Dockerfile
+    container_name: tessera-inference
+    ports:
+      - "8082:8082"
+
+  orchestrator:
+    build:
+      context: .
+      dockerfile: orchestrator/Dockerfile
+    container_name: tessera-orchestrator
+    ports:
+      - "8081:8081"
+    environment:
+      - INFER_URL=http://inference:8082
+    depends_on:
+      - inference
