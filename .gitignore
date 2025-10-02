@@ -1,0 +1,16 @@
+# Python
+__pycache__/
+*.pyc
+
+# Virtual environments
+.venv/
+
+# Node.js
+node_modules/
+
+# Next.js
+.next/
+
+# macOS
+.DS_Store
+
