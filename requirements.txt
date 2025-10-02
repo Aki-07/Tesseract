@@ -2,3 +2,5 @@ fastapi==0.115.2
 uvicorn[standard]==0.30.6
 pydantic==2.9.2
 ruff==0.13.2
+requests
+sqlalchemy
