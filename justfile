@@ -1,31 +1,31 @@
-# Set shell
+# Tesseract project commands
+
 set shell := ["bash", "-cu"]
 
-# Start everything
-up:
-    docker compose up --build -d
+# Install dependencies for orchestrator
+install:
+    pip install -r services/orchestrator/requirements.txt
 
-# Stop everything + remove volumes
+# Run orchestrator locally with uvicorn
+run:
+    uvicorn services.orchestrator.app.main:app --reload --host ${HOST:-0.0.0.0} --port ${PORT:-8000}
+
+# Bring up docker compose
+up:
+    docker compose up --build
+
+# Shut down docker compose
 down:
     docker compose down -v
 
-# Show running services
-ps:
-    docker compose ps
-
 # Tail logs
 logs:
-    docker compose logs -f --tail=100
+    docker compose logs -f --tail=200
 
-# Restart everything fresh
-restart:
-    docker compose down -v
-    docker compose up --build -d
+# Format code (using ruff)
+fmt:
+    ruff format
 
-# Run orchestrator locally (bypassing Docker)
-orchestrator-local:
-    uvicorn orchestrator.main:app --reload --port 8081
-
-# Run inference locally (bypassing Docker)
-inference-local:
-    uvicorn inference.server:app --reload --port 8082
+# Lint code (using ruff)
+lint:
+    ruff check

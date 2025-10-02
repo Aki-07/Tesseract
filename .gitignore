@@ -5,6 +5,7 @@ __pycache__/
 # Virtual environments
 .venv/
 
+.env
 # Node.js
 node_modules/
 
