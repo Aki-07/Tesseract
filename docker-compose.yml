@@ -36,3 +36,10 @@ services:
     container_name: tessera-toxicity-judge
     ports:
       - "8092:8092"
+  latency-judge:
+    build:
+      context: .
+      dockerfile: latency-judge/Dockerfile
+    container_name: tessera-latency-judge
+    ports:
+      - "8093:8093"
