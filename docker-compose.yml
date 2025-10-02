@@ -28,3 +28,11 @@ services:
     container_name: tessera-style-judge
     ports:
       - "8091:8091"
+
+  toxicity-judge:
+    build:
+      context: .
+      dockerfile: toxicity-judge/Dockerfile
+    container_name: tessera-toxicity-judge
+    ports:
+      - "8092:8092"

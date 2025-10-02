@@ -18,9 +18,10 @@ def health():
 
 @app.post("/start_experiment")
 def start_experiment(req: ExperimentReq):
-    """Seeds fake candidates, evaluates style via style-judge, stores in DB."""
+    """Seeds fake candidates, evaluates via style-judge + toxicity-judge, stores in DB."""
     session = SessionLocal()
     candidates = []
+
     for _ in range(req.num_candidates):
         rank = random.choice([4, 8, 16])
         alpha = round(random.uniform(0.1, 1.0), 2)
@@ -39,17 +40,31 @@ def start_experiment(req: ExperimentReq):
         # generate fake output text (later = real inference)
         sample_text = f"Sample output from candidate {candidate.id}"
 
-        # call style-judge MCP
+        # --- call style-judge MCP ---
         try:
             r = requests.post(
-                "http://style-judge:8091/judge", json={"text": sample_text}, timeout=5
+                "http://style-judge:8091/judge",
+                json={"text": sample_text},
+                timeout=5,
             )
             style_score = r.json().get("style_score")
-        except Exception as e:
+        except Exception:
             style_score = None
 
-        # update DB with style_score
+        # --- call toxicity-judge MCP ---
+        try:
+            r = requests.post(
+                "http://toxicity-judge:8092/judge",
+                json={"text": sample_text},
+                timeout=5,
+            )
+            toxicity_score = r.json().get("toxicity_score")
+        except Exception:
+            toxicity_score = None
+
+        # update DB
         candidate.style_score = style_score
+        candidate.toxicity_score = toxicity_score
         session.commit()
 
         candidates.append(
@@ -59,9 +74,11 @@ def start_experiment(req: ExperimentReq):
                 "alpha": alpha,
                 "status": candidate.status,
                 "style_score": style_score,
+                "toxicity_score": toxicity_score,
                 "job_id": candidate.cerebras_job_id,
             }
         )
+
     session.close()
     return {"candidates": candidates}
 
