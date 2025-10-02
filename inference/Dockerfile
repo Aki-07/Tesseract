@@ -5,8 +5,7 @@ WORKDIR /app
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-COPY inference/server.py .
+# copy ONLY inference code into /app
+COPY inference/ .
 
-EXPOSE 8082
-
-CMD ["uvicorn","server:app","--host","0.0.0.0","--port","8082","--log-level","info"]
+CMD ["uvicorn", "server:app", "--host", "0.0.0.0", "--port", "8082"]

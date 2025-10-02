@@ -1,5 +1,3 @@
-version: "3.9"
-
 services:
   inference:
     build:
@@ -17,8 +15,16 @@ services:
     ports:
       - "8081:8081"
     volumes:
-      - ./data:/app/data  
+      - ./data:/app/data
     environment:
       - INFER_URL=http://inference:8082
     depends_on:
       - inference
+
+  style-judge:
+    build:
+      context: .
+      dockerfile: style-judge/Dockerfile
+    container_name: tessera-style-judge
+    ports:
+      - "8091:8091"
