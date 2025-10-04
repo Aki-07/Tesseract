@@ -42,5 +42,22 @@ services:
     depends_on:
       - orchestrator
       - capsule-demo
+
+  grafana:
+    image: grafana/grafana:11.2.2
+    container_name: tessera-grafana
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+      - GF_USERS_ALLOW_SIGN_UP=false
+    ports:
+      - "3001:3000"          
+    depends_on:
+      - prometheus
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./config/grafana:/etc/grafana/provisioning
+
 volumes:
   prometheus_data:
+  grafana_data:
