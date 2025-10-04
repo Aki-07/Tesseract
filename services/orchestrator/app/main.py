@@ -22,7 +22,6 @@ from pydantic import BaseModel
 log = structlog.get_logger(__name__)
 app = FastAPI(title="Tesseract Orchestrator", version="0.2.0")
 
-# ---- Attach HTTP metrics middleware ----
 def _name_endpoint(req: Request) -> str:
     # Small, low-cardinality name for metrics
     path = req.url.path
@@ -35,7 +34,6 @@ def _name_endpoint(req: Request) -> str:
 
 app.middleware("http")(http_metrics_middleware(_name_endpoint))
 
-# ---- /metrics endpoint ----
 app.get("/metrics")(metrics_endpoint())
 
 # ---- Config via env ----

@@ -31,3 +31,16 @@ services:
     command: uvicorn services.capsule.mcp_server:app --host 0.0.0.0 --port 9000 --reload
     ports:
       - "9000:9000"
+  prometheus:
+    image: prom/prometheus:v3.0.1
+    container_name: tessera-prometheus
+    volumes:
+      - ./config/prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus_data:/prometheus
+    ports:
+      - "9090:9090"
+    depends_on:
+      - orchestrator
+      - capsule-demo
+volumes:
+  prometheus_data:
