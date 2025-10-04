@@ -23,7 +23,7 @@ logs:
     docker compose logs -f --tail=200
 
 # Format code (using ruff)
-fmt:
+format:
     ruff format
 
 # Lint code (using ruff)

@@ -1,45 +1,29 @@
-services:
-  inference:
-    build:
-      context: .
-      dockerfile: inference/Dockerfile
-    container_name: tessera-inference
-    ports:
-      - "8082:8082"
+version: '3.9'
 
+services:
   orchestrator:
     build:
       context: .
-      dockerfile: orchestrator/Dockerfile
-    container_name: tessera-orchestrator
-    ports:
-      - "8081:8081"
-    volumes:
-      - ./data:/app/data
+      dockerfile: services/orchestrator/Dockerfile
     environment:
-      - INFER_URL=http://inference:8082
-    depends_on:
-      - inference
+      CAPSULE_URL: "http://capsule-demo:9000"
+    volumes:
+      - ./services/orchestrator:/app/orchestrator
+      - ./config:/app/config
+    command: uvicorn orchestrator.app.main:app --host 0.0.0.0 --port 8000 --reload
+    ports:
+      - "8000:8000"
 
-  style-judge:
+  capsule-demo:
     build:
       context: .
-      dockerfile: style-judge/Dockerfile
-    container_name: tessera-style-judge
+      dockerfile: services/capsule/Dockerfile
+    environment:
+      ADAPTER_ID: "defender-demo"
+      ADAPTER_PATH: "/data/adapter"
+    volumes:
+      - ./services/capsule:/app/services/capsule  
+      - ./data/capsules/defender-demo:/data/adapter
+    command: uvicorn services.capsule.mcp_server:app --host 0.0.0.0 --port 9000 --reload
     ports:
-      - "8091:8091"
-
-  toxicity-judge:
-    build:
-      context: .
-      dockerfile: toxicity-judge/Dockerfile
-    container_name: tessera-toxicity-judge
-    ports:
-      - "8092:8092"
-  latency-judge:
-    build:
-      context: .
-      dockerfile: latency-judge/Dockerfile
-    container_name: tessera-latency-judge
-    ports:
-      - "8093:8093"
+      - "9000:9000"

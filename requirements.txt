@@ -1,6 +1,8 @@
-fastapi==0.115.2
-uvicorn[standard]==0.30.6
+fastapi==0.115.2       
+uvicorn[standard]==0.31.0
 pydantic==2.9.2
-ruff==0.13.2
-requests
-sqlalchemy
+pydantic-settings==2.5.2
+httpx==0.27.2
+structlog==24.4.0
+mcp==1.1.0
+python-dotenv==1.0.1
