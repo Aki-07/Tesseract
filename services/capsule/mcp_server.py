@@ -1,11 +1,29 @@
-import os
-from fastapi import FastAPI, HTTPException
+import os, time
+from fastapi import FastAPI, HTTPException, Response
 from pydantic import BaseModel
+from prometheus_client import Counter, Histogram, CONTENT_TYPE_LATEST, generate_latest
 
 ADAPTER_ID = os.getenv("ADAPTER_ID", "defender-demo")
 ADAPTER_PATH = os.getenv("ADAPTER_PATH", "/data/adapter")
 
 app = FastAPI(title="Tesseract Capsule", version="0.1.0")
+
+# Metrics
+TOOL_CALLS = Counter(
+    "capsule_tool_calls_total",
+    "Total tool calls handled by capsule",
+    labelnames=["tool", "status"],
+)
+TOOL_LATENCY = Histogram(
+    "capsule_tool_latency_seconds",
+    "Tool call latency (seconds)",
+    labelnames=["tool"],
+)
+
+@app.get("/metrics")
+async def metrics():
+    return Response(generate_latest(), media_type=CONTENT_TYPE_LATEST)
+
 
 class AttackRequest(BaseModel):
     prompt: str
@@ -29,10 +47,19 @@ async def list_tools():
 
 @app.post("/call_tool")
 async def call_tool(req: ToolCall):
-    if req.name == "generate_attack":
-        prompt = req.arguments.get("prompt", "")
-        return [{"type": "text", "text": f"[ATTACK-DEMO] {prompt}"}]
-    elif req.name == "evaluate_defense":
-        return [{"type": "text", "text": "[DEFENSE-DEMO] safe=false,severity=low"}]
-    else:
-        raise HTTPException(status_code=400, detail=f"Unknown tool {req.name}")
+    t0 = time.perf_counter()
+    tool = req.name
+    status = "ok"
+    try:
+        if req.name == "generate_attack":
+            prompt = req.arguments.get("prompt", "")
+            result = [{"type": "text", "text": f"[ATTACK-DEMO] {prompt}"}]
+        elif req.name == "evaluate_defense":
+            result = [{"type": "text", "text": "[DEFENSE-DEMO] safe=false,severity=low"}]
+        else:
+            status = "error"
+            raise HTTPException(status_code=400, detail=f"Unknown tool {req.name}")
+        return result
+    finally:
+        TOOL_CALLS.labels(tool, status).inc()
+        TOOL_LATENCY.labels(tool).observe(time.perf_counter() - t0)
