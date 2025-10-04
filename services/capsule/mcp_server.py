@@ -7,7 +7,6 @@ ADAPTER_PATH = os.getenv("ADAPTER_PATH", "/data/adapter")
 
 app = FastAPI(title="Tesseract Capsule", version="0.1.0")
 
-# ---- Models ----
 class AttackRequest(BaseModel):
     prompt: str
 
@@ -15,12 +14,10 @@ class ToolCall(BaseModel):
     name: str
     arguments: dict
 
-# ---- Health ----
 @app.get("/health")
 async def health():
     return {"capsule": ADAPTER_ID, "ok": True}
 
-# ---- MCP-like endpoints ----
 @app.get("/list_tools")
 async def list_tools():
     return {

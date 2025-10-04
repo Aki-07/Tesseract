@@ -1,0 +1,26 @@
+{
+  "run_id": "8cf9c114",
+  "created_at": "2025-10-04T15:40:58.511967",
+  "status": "completed",
+  "rounds": [],
+  "errors": [
+    {
+      "round": 1,
+      "error": "[Errno -3] Try again"
+    },
+    {
+      "round": 2,
+      "error": "[Errno -3] Try again"
+    },
+    {
+      "round": 3,
+      "error": "[Errno -3] Try again"
+    }
+  ],
+  "breaches": 0,
+  "total_rounds": 0,
+  "breach_rate": 0.0,
+  "stop_requested": false,
+  "started_at": "2025-10-04T15:40:58.513127",
+  "finished_at": "2025-10-04T15:41:15.097303"
+}

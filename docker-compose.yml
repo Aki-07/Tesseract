@@ -6,8 +6,12 @@ services:
       context: .
       dockerfile: services/orchestrator/Dockerfile
     environment:
-      CAPSULE_URL: "http://capsule-demo:9000"
+      # Use the compose service name 'capsule-demo' so DNS resolves inside the compose network
+      CAPSULE_ATTACKER_URL: "http://capsule-demo:9000"
+      CAPSULE_DEFENDER_URL: "http://capsule-demo:9000"
+      DATA_DIR: "/data"
     volumes:
+      - ./data:/data                         # persist battles & logs to host
       - ./services/orchestrator:/app/orchestrator
       - ./config:/app/config
     command: uvicorn orchestrator.app.main:app --host 0.0.0.0 --port 8000 --reload
@@ -22,7 +26,7 @@ services:
       ADAPTER_ID: "defender-demo"
       ADAPTER_PATH: "/data/adapter"
     volumes:
-      - ./services/capsule:/app/services/capsule  
+      - ./services/capsule:/app/services/capsule
       - ./data/capsules/defender-demo:/data/adapter
     command: uvicorn services.capsule.mcp_server:app --host 0.0.0.0 --port 9000 --reload
     ports:
