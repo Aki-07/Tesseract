@@ -39,14 +39,18 @@ def test_http_metrics_middleware_records_requests_and_latency():
 
     labels_req = {"method": "GET", "endpoint": "/ping", "code": "200"}
     before_requests = _sample_value(HTTP_REQUESTS, "http_requests_total", labels_req)
-    before_latency = _sample_value(HTTP_LATENCY, "http_request_duration_seconds_count", {"endpoint": "/ping"})
+    before_latency = _sample_value(
+        HTTP_LATENCY, "http_request_duration_seconds_count", {"endpoint": "/ping"}
+    )
 
     response = client.get("/ping")
 
     assert response.status_code == 200
 
     after_requests = _sample_value(HTTP_REQUESTS, "http_requests_total", labels_req)
-    after_latency = _sample_value(HTTP_LATENCY, "http_request_duration_seconds_count", {"endpoint": "/ping"})
+    after_latency = _sample_value(
+        HTTP_LATENCY, "http_request_duration_seconds_count", {"endpoint": "/ping"}
+    )
 
     assert after_requests == pytest.approx(before_requests + 1)
     assert after_latency == pytest.approx(before_latency + 1)

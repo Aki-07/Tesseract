@@ -34,8 +34,14 @@ def _dummy_request(path: str):
 
 
 def test_name_endpoint_sanitizes_ids(orchestrator):
-    assert orchestrator._name_endpoint(_dummy_request("/battle/status/abc")) == "/battle/status/{id}"
-    assert orchestrator._name_endpoint(_dummy_request("/battle/get/xyz")) == "/battle/get/{id}"
+    assert (
+        orchestrator._name_endpoint(_dummy_request("/battle/status/abc"))
+        == "/battle/status/{id}"
+    )
+    assert (
+        orchestrator._name_endpoint(_dummy_request("/battle/get/xyz"))
+        == "/battle/get/{id}"
+    )
     assert orchestrator._name_endpoint(_dummy_request("/health")) == "/health"
 
 
@@ -91,9 +97,13 @@ async def test_start_battle_creates_state_and_task(orchestrator, monkeypatch):
         def done(self):
             return False
 
-    monkeypatch.setattr(orchestrator.asyncio, "create_task", lambda coro: DummyTask(coro))
+    monkeypatch.setattr(
+        orchestrator.asyncio, "create_task", lambda coro: DummyTask(coro)
+    )
 
-    req = orchestrator.StartBattleRequest(rounds=1, interval_seconds=0.0, run_id="run123")
+    req = orchestrator.StartBattleRequest(
+        rounds=1, interval_seconds=0.0, run_id="run123"
+    )
     result = await orchestrator.start_battle(req, BackgroundTasks())
 
     assert result == {"run_id": "run123", "status": "started"}

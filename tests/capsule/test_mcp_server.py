@@ -59,16 +59,22 @@ async def test_call_tool_generate_attack_increments_metrics(capsule):
     labels_calls = {"tool": "generate_attack", "status": "ok"}
     labels_latency = {"tool": "generate_attack"}
 
-    before_calls = _sample_value(capsule.TOOL_CALLS, "capsule_tool_calls_total", labels_calls)
+    before_calls = _sample_value(
+        capsule.TOOL_CALLS, "capsule_tool_calls_total", labels_calls
+    )
     before_latency = _sample_value(
         capsule.TOOL_LATENCY, "capsule_tool_latency_seconds_count", labels_latency
     )
 
-    result = await capsule.call_tool(capsule.ToolCall(name="generate_attack", arguments={"prompt": "hi"}))
+    result = await capsule.call_tool(
+        capsule.ToolCall(name="generate_attack", arguments={"prompt": "hi"})
+    )
 
     assert result[0]["text"].startswith("[ATTACK-DEMO]")
 
-    after_calls = _sample_value(capsule.TOOL_CALLS, "capsule_tool_calls_total", labels_calls)
+    after_calls = _sample_value(
+        capsule.TOOL_CALLS, "capsule_tool_calls_total", labels_calls
+    )
     after_latency = _sample_value(
         capsule.TOOL_LATENCY, "capsule_tool_latency_seconds_count", labels_latency
     )
@@ -81,10 +87,14 @@ async def test_call_tool_generate_attack_increments_metrics(capsule):
 async def test_call_tool_unknown_records_error(capsule):
     labels_calls = {"tool": "unknown", "status": "error"}
 
-    before_calls = _sample_value(capsule.TOOL_CALLS, "capsule_tool_calls_total", labels_calls)
+    before_calls = _sample_value(
+        capsule.TOOL_CALLS, "capsule_tool_calls_total", labels_calls
+    )
 
     with pytest.raises(HTTPException):
         await capsule.call_tool(capsule.ToolCall(name="unknown", arguments={}))
 
-    after_calls = _sample_value(capsule.TOOL_CALLS, "capsule_tool_calls_total", labels_calls)
+    after_calls = _sample_value(
+        capsule.TOOL_CALLS, "capsule_tool_calls_total", labels_calls
+    )
     assert after_calls == pytest.approx(before_calls + 1)
