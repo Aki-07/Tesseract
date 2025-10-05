@@ -23,6 +23,7 @@ demo/
 
 # Runtime data snapshots
 data/
+data/battles/
 
 # UI build artifacts
 services/ui/ui/.turbo/
