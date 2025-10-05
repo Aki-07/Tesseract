@@ -1,7 +1,13 @@
-import uuid, json, enum
-from sqlalchemy import Column, String, Boolean, DateTime, Enum, Text
+"""SQLAlchemy models for the orchestrator."""
+
+import enum
+import json
+import uuid
+
+from sqlalchemy import Boolean, Column, DateTime, Enum, String, Text
 from sqlalchemy.sql import func
-from .db import Base  # safe now — no circular loop
+
+from .session import Base
 
 
 class Role(str, enum.Enum):
@@ -31,8 +37,7 @@ class Capsule(Base):
         DateTime(timezone=True), onupdate=func.now(), server_default=func.now()
     )
 
-    def json_safe(self):
-        """Helper to deserialize stored JSON fields."""
+    def json_safe(self) -> dict:
         return {
             "id": self.id,
             "name": self.name,
@@ -46,6 +51,6 @@ class Capsule(Base):
             "enabled": self.enabled,
             "owner": self.owner,
             "description": self.description,
-            "created_at": str(self.created_at),
-            "updated_at": str(self.updated_at),
+            "created_at": self.created_at,
+            "updated_at": self.updated_at,
         }

@@ -1,22 +1,22 @@
-# services/orchestrator/app/routers/multi_battle.py
+# services/orchestrator/app/api/routes/multi_battle.py
 import asyncio
 import json
 import uuid
 from typing import List, Optional
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
-from ..db import get_db
-from ..models import Capsule as CapsuleModel
-from ..metrics import (
+from ...db import get_db
+from ...db.models import Capsule as CapsuleModel
+from ...core.battle import call_capsule_tool
+from ...core.metrics import (
     BATTLE_ROUNDS,
     BATTLE_BREACHES,
     BATTLE_ACTIVE,
     BREACH_RATE,
 )
-from ..state import battle_tasks, battle_states
-from ..storage import save_battle_state, load_battle_state
+from ...core.state import battle_tasks, battle_states
+from ...core.storage import save_battle_state, load_battle_state
 from datetime import datetime
-import httpx
 import structlog
 
 log = structlog.get_logger(__name__)
@@ -86,13 +86,6 @@ def resolve_service_url(capsule: CapsuleModel) -> Optional[str]:
     return f"http://{capsule.name}:9000"
 
 
-async def call_capsule_tool(url: str, name: str, arguments: dict, timeout=15):
-    async with httpx.AsyncClient(timeout=timeout) as client:
-        resp = await client.post(f"{url}/call_tool", json={"name": name, "arguments": arguments})
-        resp.raise_for_status()
-        return resp.json()
-
-
 # Single-runner (per-run) 
 async def single_battle_runner(
     run_id: str,
@@ -102,9 +95,19 @@ async def single_battle_runner(
     defender_url: str,
     attacker_tool: str = "generate_attack",
     defender_tool: str = "evaluate_defense",
+    attacker_id: Optional[str] = None,
+    defender_id: Optional[str] = None,
 ):
-    """Runner that persistently saves state to disk via save_battle_state."""
+    """Runner that persistently saves state to disk via save_battle_state.
+    Accepts optional attacker_id / defender_id to persist registry IDs for evolution.
+    """
     state = battle_states[run_id]
+    # set ids at run-level so evolution can find them easily
+    if attacker_id:
+        state["attacker_id"] = attacker_id
+    if defender_id:
+        state["defender_id"] = defender_id
+
     state["status"] = "running"
     state["started_at"] = datetime.utcnow().isoformat()
     save_battle_state(run_id)  # persist initial queued->running
@@ -149,6 +152,9 @@ async def single_battle_runner(
                     "breach": breach,
                     "attacker_url": attacker_url,
                     "defender_url": defender_url,
+                    # include IDs per-round too (may be None for manual pairs)
+                    "attacker_id": attacker_id,
+                    "defender_id": defender_id,
                 }
                 state["rounds"].append(round_entry)
                 state["total_rounds"] = r
@@ -196,6 +202,9 @@ async def start_multi(req: StartMultiRequest, db: Session = Depends(get_db)):
                     "defender_tool": p.defender_tool,
                     "rounds": p.rounds,
                     "interval_seconds": p.interval_seconds,
+                    # no registry ids for manual pairs
+                    "attacker_id": None,
+                    "defender_id": None,
                 }
             )
     elif req.mode == "from_registry":
@@ -216,6 +225,9 @@ async def start_multi(req: StartMultiRequest, db: Session = Depends(get_db)):
                     "defender_tool": req.defender_tool,
                     "rounds": req.rounds,
                     "interval_seconds": req.interval_seconds,
+                    # IMPORTANT: include registry IDs so evolution can mutate exact capsule
+                    "attacker_id": a.id,
+                    "defender_id": d.id,
                 }
             )
     else:
@@ -226,6 +238,7 @@ async def start_multi(req: StartMultiRequest, db: Session = Depends(get_db)):
 
     async def run_pair(pair):
         run_id = (str(uuid.uuid4())[:8])
+        # seed run state and include attacker_id/defender_id at top-level (may be None)
         battle_states[run_id] = {
             "run_id": run_id,
             "created_at": datetime.utcnow().isoformat(),
@@ -236,12 +249,16 @@ async def start_multi(req: StartMultiRequest, db: Session = Depends(get_db)):
             "total_rounds": 0,
             "breach_rate": 0.0,
             "stop_requested": False,
+            # meta: useful for UI and quick inspection
             "meta": {
                 "attacker_url": pair["attacker_url"],
                 "defender_url": pair["defender_url"],
                 "attacker_tool": pair.get("attacker_tool"),
                 "defender_tool": pair.get("defender_tool"),
             },
+            # store registry ids (if available) at top-level too for evolution lookup
+            "attacker_id": pair.get("attacker_id"),
+            "defender_id": pair.get("defender_id"),
         }
 
         # persist queued state
@@ -257,6 +274,8 @@ async def start_multi(req: StartMultiRequest, db: Session = Depends(get_db)):
                     defender_url=pair["defender_url"],
                     attacker_tool=pair.get("attacker_tool", "generate_attack"),
                     defender_tool=pair.get("defender_tool", "evaluate_defense"),
+                    attacker_id=pair.get("attacker_id"),
+                    defender_id=pair.get("defender_id"),
                 )
             )
             battle_tasks[run_id] = task

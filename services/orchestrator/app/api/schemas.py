@@ -1,6 +1,7 @@
-from pydantic import BaseModel
-from typing import Optional, Dict, List
 from datetime import datetime
+from typing import Dict, List, Optional
+
+from pydantic import BaseModel
 
 
 class CapsuleBase(BaseModel):
@@ -23,8 +24,16 @@ class CapsuleCreate(CapsuleBase):
 
 class CapsuleOut(CapsuleBase):
     id: str
-    created_at: datetime
-    updated_at: datetime
+    created_at: Optional[datetime] = None
+    updated_at: Optional[datetime] = None
 
     class Config:
-        orm_mode = True
+        from_attributes = True
+
+
+class StartBattleRequest(BaseModel):
+    rounds: int = 20
+    interval_seconds: float = 1.0
+    attacker_tool: str = "generate_attack"
+    defender_tool: str = "evaluate_defense"
+    run_id: Optional[str] = None

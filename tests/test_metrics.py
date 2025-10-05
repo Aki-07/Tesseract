@@ -2,7 +2,7 @@ import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
-from services.orchestrator.app.metrics import (
+from services.orchestrator.app.core.metrics import (
     CONTENT_TYPE_LATEST,
     HTTP_LATENCY,
     HTTP_REQUESTS,

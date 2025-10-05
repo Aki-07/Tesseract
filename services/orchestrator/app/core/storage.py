@@ -5,7 +5,8 @@ from .state import battle_states
 
 logger = logging.getLogger("tesseract.storage")
 
-DATA_DIR = os.getenv("DATA_DIR", "/data")
+DEFAULT_DATA_DIR = os.path.join(os.getcwd(), "data")
+DATA_DIR = os.path.abspath(os.getenv("DATA_DIR", DEFAULT_DATA_DIR))
 BATTLES_DIR = os.path.join(DATA_DIR, "battles")
 os.makedirs(BATTLES_DIR, exist_ok=True)
 
