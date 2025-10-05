@@ -8,7 +8,7 @@ import { useEffect, useState } from "react";
 
 export default function HomePage() {
   const [stats, setStats] = useState<{ capsules: number; runs: number }>({
-    capsules: 0,
+    capsules: 16,
     runs: 0,
   });
 
