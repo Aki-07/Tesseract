@@ -1,7 +1,7 @@
 import uuid, json, enum
 from sqlalchemy import Column, String, Boolean, DateTime, Enum, Text
 from sqlalchemy.sql import func
-from app.db import Base
+from .db import Base  # safe now — no circular loop
 
 
 class Role(str, enum.Enum):
@@ -17,12 +17,11 @@ class Capsule(Base):
     version = Column(String, nullable=False, default="v1")
     role = Column(Enum(Role), nullable=False)
 
-    image = Column(String, nullable=False)  # docker image (for spawning)
-    entrypoint = Column(String, nullable=True)  # optional command
-    env = Column(Text, nullable=True)  # store as JSON string
+    image = Column(String, nullable=False)
+    entrypoint = Column(String, nullable=True)
+    env = Column(Text, nullable=True)
     config = Column(Text, nullable=True)
-
-    tags = Column(Text, nullable=True)  # ["fast","guard","policy"]
+    tags = Column(Text, nullable=True)
     enabled = Column(Boolean, default=True)
     owner = Column(String, nullable=True)
     description = Column(String, nullable=True)
@@ -34,8 +33,6 @@ class Capsule(Base):
 
     def json_safe(self):
         """Helper to deserialize stored JSON fields."""
-        import json
-
         return {
             "id": self.id,
             "name": self.name,

@@ -6,12 +6,12 @@ services:
       context: .
       dockerfile: services/orchestrator/Dockerfile
     environment:
-      # Use the compose service name 'capsule-demo' so DNS resolves inside the compose network
       CAPSULE_ATTACKER_URL: "http://capsule-demo:9000"
       CAPSULE_DEFENDER_URL: "http://capsule-demo:9000"
       DATA_DIR: "/data"
+      DB_URL: "sqlite:///data/capsule_registry.db"    # 👈 explicit DB path
     volumes:
-      - ./data:/data                         # persist battles & logs to host
+      - ./data:/data                                 # persist battles, registry, logs
       - ./services/orchestrator:/app/orchestrator
       - ./config:/app/config
     command: uvicorn orchestrator.app.main:app --host 0.0.0.0 --port 8000 --reload

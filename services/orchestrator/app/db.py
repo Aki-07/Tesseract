@@ -1,11 +1,11 @@
+import os
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, declarative_base
 from contextlib import contextmanager
-from app.models import Capsule
-import os
 
-DB_URL = os.getenv("DB_URL", "sqlite:///./capsule_registry.db")
-
+DB_PATH = "data/capsule_registry.db"
+DB_URL = os.getenv("DB_URL", f"sqlite:///{DB_PATH}")
+os.makedirs(os.path.dirname(DB_PATH), exist_ok=True)
 engine = create_engine(
     DB_URL,
     connect_args={"check_same_thread": False} if DB_URL.startswith("sqlite") else {},
@@ -15,6 +15,13 @@ engine = create_engine(
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()
 
+def get_db():
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
+        
 
 def get_session():
     """Provides database session in a context manager."""
@@ -36,6 +43,6 @@ def get_session():
 
 def init_db():
     """Creates tables if not exist."""
-    from app.models import Capsule
-
+    from .models import Capsule  # ✅ ensure local import AFTER Base defined
     Base.metadata.create_all(bind=engine)
+    print("✅ Capsule table created (if not already)")

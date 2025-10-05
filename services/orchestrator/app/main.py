@@ -7,9 +7,9 @@ from typing import Optional
 from fastapi import FastAPI, HTTPException, BackgroundTasks, Request, Response
 import httpx
 import structlog
-from app.routers import capsules
+from .routers import capsules, multi_battle
 from contextlib import asynccontextmanager
-from app.db import init_db
+from .db import init_db
 
 from .metrics import (
     metrics_endpoint,
@@ -23,7 +23,6 @@ from .metrics import (
 from pydantic import BaseModel
 
 log = structlog.get_logger(__name__)
-app = FastAPI(title="Tesseract Orchestrator", version="0.2.0")
 
 
 @asynccontextmanager
@@ -33,6 +32,9 @@ async def lifespan(app: FastAPI):
     init_db()  # create DB + tables
     yield
     print("🧩 Shutting down Orchestrator...")
+
+
+app = FastAPI(title="Tesseract Orchestrator", version="0.2.0", lifespan=lifespan)
 
 
 def _name_endpoint(req: Request) -> str:
@@ -48,6 +50,7 @@ def _name_endpoint(req: Request) -> str:
 
 app.middleware("http")(http_metrics_middleware(_name_endpoint))
 app.include_router(capsules.router)
+app.include_router(multi_battle.router)   # add this line
 app.get("/metrics")(metrics_endpoint())
 
 # ---- Config via env ----
