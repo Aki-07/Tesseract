@@ -39,12 +39,12 @@ def create_app() -> FastAPI:
 
     app.middleware("http")(http_metrics_middleware(_name_endpoint))
     app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["http://localhost:3000"],  # UI port
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+        CORSMiddleware,
+        allow_origins=["http://localhost:3000"],  # UI port
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
     app.include_router(api_router)
     app.get("/metrics")(metrics_endpoint())
 

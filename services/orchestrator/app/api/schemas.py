@@ -32,8 +32,12 @@ class CapsuleOut(CapsuleBase):
 
 
 class StartBattleRequest(BaseModel):
-    rounds: int = 20
-    interval_seconds: float = 1.0
+    run_id: Optional[str] = None
     attacker_tool: str = "generate_attack"
     defender_tool: str = "evaluate_defense"
-    run_id: Optional[str] = None
+    rounds: int = 20
+    interval_seconds: float = 1.0
+    attacker_url: Optional[str] = None
+    defender_url: Optional[str] = None
+    attacker_model: Optional[str] = None
+    defender_model: Optional[str] = None

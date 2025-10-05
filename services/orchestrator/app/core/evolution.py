@@ -41,7 +41,9 @@ def evaluate_run(run_id: str) -> Dict[str, Any]:
     }
 
 
-def _mutate_config(old_config: Dict[str, Any], strategy: str = "defense_harden") -> Dict[str, Any]:
+def _mutate_config(
+    old_config: Dict[str, Any], strategy: str = "defense_harden"
+) -> Dict[str, Any]:
     """
     Simple mutation operators for capsule configs.
     """
@@ -132,13 +134,19 @@ def mutate_and_register_capsule(
             tags=json.dumps(new_tags),
             enabled=True,
             owner=capsule.owner,
-            description=(capsule.description or "") + (f" (mutated: {reason})" if reason else ""),
+            description=(capsule.description or "")
+            + (f" (mutated: {reason})" if reason else ""),
         )
 
         db.add(new_capsule)
         db.commit()
         db.refresh(new_capsule)
-        log.info("mutated_and_registered_capsule", original=capsule.id, new=new_capsule.id, strategy=strategy)
+        log.info(
+            "mutated_and_registered_capsule",
+            original=capsule.id,
+            new=new_capsule.id,
+            strategy=strategy,
+        )
         return new_capsule.json_safe()
     except Exception:
         db.rollback()
@@ -155,14 +163,23 @@ def _choose_target_from_role(role: str) -> Optional[str]:
     """
     db: Session = SessionLocal()
     try:
-        q = db.query(Capsule).filter(Capsule.role == Role(role), Capsule.enabled == True).order_by(Capsule.created_at.asc())
+        q = (
+            db.query(Capsule)
+            .filter(Capsule.role == Role(role), Capsule.enabled == True)
+            .order_by(Capsule.created_at.asc())
+        )
         c = q.first()
         return c.id if c else None
     finally:
         db.close()
 
 
-def evaluate_and_mutate(run_id: str, capsule_id: Optional[str] = None, target_role: Optional[str] = None, strategy: str = "defense_harden") -> Dict[str, Any]:
+def evaluate_and_mutate(
+    run_id: str,
+    capsule_id: Optional[str] = None,
+    target_role: Optional[str] = None,
+    strategy: str = "defense_harden",
+) -> Dict[str, Any]:
     """
     High-level function:
      - evaluate the run
@@ -196,9 +213,18 @@ def evaluate_and_mutate(run_id: str, capsule_id: Optional[str] = None, target_ro
             target_id = attacker_id or _choose_target_from_role("attack")
 
     if not target_id:
-        return {"evaluation": evald, "mutated": None, "note": "no target capsule found to mutate"}
+        return {
+            "evaluation": evald,
+            "mutated": None,
+            "note": "no target capsule found to mutate",
+        }
 
-    mutated = mutate_and_register_capsule(target_id, role=role, strategy=strategy, reason=f"auto-evolved from run {run_id} at {datetime.utcnow().isoformat()}")
+    mutated = mutate_and_register_capsule(
+        target_id,
+        role=role,
+        strategy=strategy,
+        reason=f"auto-evolved from run {run_id} at {datetime.utcnow().isoformat()}",
+    )
 
     # Append an evolution audit to the run state so results are traceable
     try:

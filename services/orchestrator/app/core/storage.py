@@ -17,6 +17,7 @@ BATTLES_DIR.mkdir(parents=True, exist_ok=True)
 
 logger.info(f"[storage] Using BATTLES_DIR={BATTLES_DIR}")
 
+
 # ------------------------------------------------------------------------------
 # Save battle state
 # ------------------------------------------------------------------------------

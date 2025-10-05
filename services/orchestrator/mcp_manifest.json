@@ -1,0 +1,34 @@
+{
+  "version": "1.0",
+  "tools": [
+    {
+      "name": "generate_attack",
+      "description": "Launches an attacker capsule container that generates adversarial prompts.",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "target_model": {
+            "type": "string",
+            "description": "Model being attacked"
+          },
+          "prompt": { "type": "string", "description": "Prompt to attack" }
+        },
+        "required": ["target_model", "prompt"]
+      }
+    },
+    {
+      "name": "evaluate_defense",
+      "description": "Launches a defender capsule container to evaluate and resist the attacker.",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "attack_text": {
+            "type": "string",
+            "description": "Text to defend against"
+          }
+        },
+        "required": ["attack_text"]
+      }
+    }
+  ]
+}

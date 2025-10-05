@@ -1,20 +1,24 @@
-version: '3.9'
 
 services:
   orchestrator:
     build:
       context: .
       dockerfile: services/orchestrator/Dockerfile
+    working_dir: /app
     environment:
       CAPSULE_ATTACKER_URL: "http://capsule-demo:9000"
       CAPSULE_DEFENDER_URL: "http://capsule-demo:9000"
       DATA_DIR: "/data"
-      DB_URL: "sqlite:///data/capsule_registry.db"    # 👈 explicit DB path
+      DB_URL: "sqlite:///data/capsule_registry.db"
+      PYTHONPATH: "/app"
+      HF_API_KEY: "${HF_API_KEY}"
+      CEREBRAS_API_KEY: "${CEREBRAS_API_KEY}"
     volumes:
-      - ./data:/data:rw                             # persist battles, registry, logs
-      - ./services/orchestrator:/app/orchestrator
-      - ./config:/app/config
-    command: uvicorn orchestrator.app.main:app --host 0.0.0.0 --port 8000 --reload
+      - /var/run/docker.sock:/var/run/docker.sock
+    # volumes:
+    #   - ./data:/data:rw
+    #   - ./config:/config:ro
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000
     ports:
       - "8000:8000"
 
@@ -22,15 +26,17 @@ services:
     build:
       context: .
       dockerfile: services/capsule/Dockerfile
+    working_dir: /app
     environment:
       ADAPTER_ID: "defender-demo"
       ADAPTER_PATH: "/data/adapter"
+      PYTHONPATH: "/app"
     volumes:
-      - ./services/capsule:/app/services/capsule
-      - ./data/capsules/defender-demo:/data/adapter
-    command: uvicorn services.capsule.mcp_server:app --host 0.0.0.0 --port 9000 --reload
+      - ./data/capsules/defender-demo:/data/adapter:rw
+    command: uvicorn mcp_server:app --host 0.0.0.0 --port 9000
     ports:
       - "9000:9000"
+
   prometheus:
     image: prom/prometheus:v3.0.1
     container_name: tessera-prometheus
@@ -51,7 +57,7 @@ services:
       - GF_SECURITY_ADMIN_PASSWORD=admin
       - GF_USERS_ALLOW_SIGN_UP=false
     ports:
-      - "3001:3000"          
+      - "3001:3000"
     depends_on:
       - prometheus
     volumes:
@@ -61,7 +67,7 @@ services:
   ui:
     build:
       context: services/ui
-      dockerfile: Dockerfile 
+      dockerfile: Dockerfile
     container_name: tessera-ui
     ports:
       - "3000:3000"

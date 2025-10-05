@@ -22,7 +22,9 @@ def orchestrator_modules(tmp_path, monkeypatch):
     state = importlib.import_module("services.orchestrator.app.core.state")
     battle_core = importlib.import_module("services.orchestrator.app.core.battle")
     schemas = importlib.import_module("services.orchestrator.app.api.schemas")
-    battle_routes = importlib.import_module("services.orchestrator.app.api.routes.battle")
+    battle_routes = importlib.import_module(
+        "services.orchestrator.app.api.routes.battle"
+    )
 
     yield {
         "battle_core": battle_core,
@@ -50,13 +52,20 @@ def _dummy_request(path: str):
 
 def test_name_endpoint_sanitizes_ids():
     module = importlib.import_module("services.orchestrator.app.api.app")
-    assert module._name_endpoint(_dummy_request("/battle/status/abc")) == "/battle/status/{id}"
-    assert module._name_endpoint(_dummy_request("/battle/get/xyz")) == "/battle/get/{id}"
+    assert (
+        module._name_endpoint(_dummy_request("/battle/status/abc"))
+        == "/battle/status/{id}"
+    )
+    assert (
+        module._name_endpoint(_dummy_request("/battle/get/xyz")) == "/battle/get/{id}"
+    )
     assert module._name_endpoint(_dummy_request("/health")) == "/health"
 
 
 @pytest.mark.asyncio
-async def test_battle_runner_updates_state_and_metrics(orchestrator_modules, monkeypatch):
+async def test_battle_runner_updates_state_and_metrics(
+    orchestrator_modules, monkeypatch
+):
     battle_core = orchestrator_modules["battle_core"]
 
     run_id = "runner"

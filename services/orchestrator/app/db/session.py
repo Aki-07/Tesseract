@@ -15,13 +15,14 @@ engine = create_engine(
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()
 
+
 def get_db():
     db = SessionLocal()
     try:
         yield db
     finally:
         db.close()
-        
+
 
 def get_session():
     """Provides database session in a context manager."""
@@ -43,6 +44,7 @@ def get_session():
 
 def init_db():
     """Creates tables if not exist."""
-    from .models import Capsule  
+    from .models import Capsule
+
     Base.metadata.create_all(bind=engine)
     print("✅ Capsule table created (if not already)")

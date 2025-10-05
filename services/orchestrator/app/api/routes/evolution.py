@@ -32,7 +32,7 @@ async def trigger_evolution(
     run_id: str,
     payload: Optional[dict] = Body(
         default=None,
-        description='Optional JSON: {"capsule_id":"...", "target_role":"defense", "strategy":"defense_harden"}'
+        description='Optional JSON: {"capsule_id":"...", "target_role":"defense", "strategy":"defense_harden"}',
     ),
 ) -> Dict[str, Any]:
     """
@@ -52,7 +52,9 @@ async def trigger_evolution(
         strategy = payload.get("strategy", strategy)
 
     try:
-        result = await asyncio.to_thread(evaluate_and_mutate, run_id, capsule_id, target_role, strategy)
+        result = await asyncio.to_thread(
+            evaluate_and_mutate, run_id, capsule_id, target_role, strategy
+        )
         return result
     except Exception as e:
         logger.error("trigger_evolution_failed run=%s error=%s", run_id, str(e))
