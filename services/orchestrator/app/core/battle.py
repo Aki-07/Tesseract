@@ -17,6 +17,7 @@ from pathlib import Path
 from .hf_adapter import HuggingFaceAdapter  # expects an adapter class
 from .cerebras_adapter import call_cerebras  # wrapper to call Cerebras API
 from .spawner import stop_capsule
+
 log = structlog.get_logger(__name__)
 
 # Default demo URLs (kept for backwards compatibility)
@@ -44,6 +45,7 @@ BREACH_TOKENS: Iterable[str] = (
 _hf_adapter: Optional[HuggingFaceAdapter] = None
 
 from .state import battle_states
+
 
 def set_run_state(run_id: str, state: dict):
     """Update the in-memory battle state."""

@@ -8,6 +8,7 @@ IN_RENDER = os.getenv("RENDER", "false").lower() == "true"
 
 if not IN_RENDER:
     import docker
+
     client = docker.from_env()
 else:
     client = None

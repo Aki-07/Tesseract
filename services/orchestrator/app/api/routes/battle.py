@@ -5,7 +5,7 @@ import asyncio
 from asyncio import log
 import uuid
 from typing import Optional
-import json, pathlib 
+import json, pathlib
 from fastapi import APIRouter, BackgroundTasks, HTTPException
 
 from ...core import battle as battle_core
@@ -16,6 +16,7 @@ from ...core.spawner import spawn_capsule, stop_capsule
 from ...core.storage import save_battle_state
 
 router = APIRouter(prefix="/battle", tags=["battle"])
+
 
 @router.post("/start")
 async def start_battle(
@@ -99,7 +100,6 @@ async def start_battle(
     }
 
 
-
 @router.post("/stop/{run_id}")
 async def stop_battle(run_id: str) -> dict:
     try:
@@ -134,7 +134,7 @@ async def get_battle(run_id: str) -> dict:
     return state
 
 
-@router.get("/mcp/manifest") 
-def mcp_manifest(): 
-    p = pathlib.Path(__file__).resolve().parents[2] / "mcp_manifest.json" 
+@router.get("/mcp/manifest")
+def mcp_manifest():
+    p = pathlib.Path(__file__).resolve().parents[2] / "mcp_manifest.json"
     return json.loads(p.read_text())

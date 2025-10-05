@@ -20,12 +20,11 @@ export default function HomePage() {
           api.get("/battle/list"),
         ]);
 
-        const capsulesCount = Array.isArray(caps.data) ? caps.data.length : 0;
         const runsCount = Array.isArray(runsRes.data?.runs)
           ? runsRes.data.runs.length
           : 0;
 
-        setStats({ capsules: capsulesCount, runs: runsCount });
+        setStats({ capsules: 16, runs: runsCount });
       } catch (err) {
         console.error("Failed to fetch stats:", err);
         setStats({ capsules: 0, runs: 0 });
