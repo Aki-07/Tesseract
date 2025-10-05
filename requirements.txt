@@ -7,3 +7,5 @@ structlog==24.4.0
 mcp==1.1.0
 python-dotenv==1.0.1
 prometheus-client==0.21.0
+pytest==8.3.3
+pytest-asyncio==0.24.0
