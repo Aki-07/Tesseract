@@ -11,7 +11,7 @@ services:
       DATA_DIR: "/data"
       DB_URL: "sqlite:///data/capsule_registry.db"    # 👈 explicit DB path
     volumes:
-      - ./data:/data                                 # persist battles, registry, logs
+      - ./data:/data:rw                             # persist battles, registry, logs
       - ./services/orchestrator:/app/orchestrator
       - ./config:/app/config
     command: uvicorn orchestrator.app.main:app --host 0.0.0.0 --port 8000 --reload

@@ -55,11 +55,10 @@ async def battle_status(run_id: str) -> dict:
     state_copy["task_active"] = bool(task and not task.done())
     return state_copy
 
-
 @router.get("/list")
-async def list_battles() -> dict:
-    return battle_core.list_runs()
-
+async def list_battles():
+    """Return list of all runs with metrics summary."""
+    return {"runs": battle_core.list_runs()}
 
 @router.get("/get/{run_id}")
 async def get_battle(run_id: str) -> dict:

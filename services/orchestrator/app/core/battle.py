@@ -5,20 +5,20 @@ from __future__ import annotations
 import asyncio
 import os
 from datetime import datetime
-from typing import Any, Dict, Iterable
+from typing import Any, Dict, Iterable,List
 
 import httpx
 import structlog
-
 from .metrics import BATTLE_ACTIVE, BATTLE_BREACHES, BATTLE_ROUNDS, BREACH_RATE
 from .state import battle_states, battle_tasks
 from .storage import save_battle_state, load_battle_state, BATTLES_DIR
-
+import json
+from pathlib import Path
 log = structlog.get_logger(__name__)
 
 ATTACKER_URL = os.getenv("CAPSULE_ATTACKER_URL", "http://attacker-demo:9000")
 DEFENDER_URL = os.getenv("CAPSULE_DEFENDER_URL", "http://defender-demo:9000")
-
+BATTLES_DIR = Path(os.getenv("DATA_DIR", "/data")) / "battles"
 BREACH_TOKENS: Iterable[str] = (
     "safe=false",
     "safe: false",
@@ -140,9 +140,35 @@ def get_run_state(run_id: str) -> Dict[str, Any] | None:
     return battle_states.get(run_id) or load_battle_state(run_id)
 
 
-def list_runs() -> Dict[str, Any]:
-    files = [f for f in os.listdir(BATTLES_DIR) if f.endswith(".json")]
-    return {"runs": [f[:-5] for f in files]}
+def list_runs() -> List[Dict[str, Any]]:
+    """Read all run state files from data/battles and return summary info."""
+    BATTLES_DIR.mkdir(parents=True, exist_ok=True)
+    runs: List[Dict[str, Any]] = []
+
+    for file in os.listdir(BATTLES_DIR):
+        if not file.endswith(".json"):
+            continue
+
+        path = BATTLES_DIR / file
+        try:
+            data = json.loads(path.read_text())
+        except Exception:
+            continue
+
+        meta = data.get("meta", {})
+        metrics = data.get("metrics", {})
+
+        runs.append({
+            "id": file[:-5],
+            "attacker_id": meta.get("attacker_id") or meta.get("attacker") or "unknown",
+            "defender_id": meta.get("defender_id") or meta.get("defender") or "unknown",
+            "breach_rate": metrics.get("breach_rate", 0.0),
+            "created_at": data.get("created_at"),
+        })
+
+    # Sort newest first
+    runs.sort(key=lambda r: r.get("created_at") or "", reverse=True)
+    return runs
 
 
 def _extract_text(value: Any) -> str:

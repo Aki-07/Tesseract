@@ -1,7 +1,21 @@
 import "./globals.css";
 import { Inter } from "next/font/google";
-import Link from "next/link";
+import { Metadata } from "next";
+import NavigationBar from "./components/NavigationBar";
 import ParticlesBackground from "./components/ParticleBackground";
+
+export const metadata: Metadata = {
+  title: {
+    default: "Tesseract",
+    template: "%s | Tesseract",
+  },
+  description:
+    "Tesseract Control Center for orchestrating capsule battles and monitoring runs.",
+  icons: {
+    icon: "/favicon.svg",
+    shortcut: "/favicon.svg",
+  },
+};
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -13,20 +27,14 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body
-        className={`${inter.className} relative min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 text-gray-100`}
+        className={`${inter.className} relative min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-black text-gray-100 overflow-hidden`}
       >
         <ParticlesBackground />
+        <NavigationBar />
 
-        <nav className="flex items-center justify-between px-8 py-4 backdrop-blur-sm bg-white/5 border-b border-white/10">
-          <div className="text-xl font-semibold tracking-wide"> Tessera</div>
-          <div className="space-x-6 text-sm">
-            <Link href="/">Home</Link>
-            <Link href="/capsules">Capsules</Link>
-            <Link href="/runs">Runs</Link>
-          </div>
-        </nav>
+        <main className="relative z-10 px-8 py-12">{children}</main>
 
-        <main className="px-8 py-12">{children}</main>
+        <div className="absolute inset-0 pointer-events-none border-t border-b border-cyan-500/10 shadow-[0_0_40px_rgba(56,189,248,0.2)_inset]"></div>
       </body>
     </html>
   );

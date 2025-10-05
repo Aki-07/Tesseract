@@ -7,6 +7,10 @@ set -euo pipefail
 # Usage:
 #   ./demo.sh
 #   BASE=http://localhost:8000 NUM_MATCHES=2 ROUNDS=5 ./demo.sh
+# Optional env:
+#   ORCH_CONTAINER - name of the orchestrator container (default: tessera-orchestrator)
+#   INJECT_BREACHES - "true" to enable post-run injection (default: true)
+#   INJECT_PROB - probability per-round to mark breach when injecting (default: 0.30)
 
 : "${BASE:=http://localhost:8000}"
 : "${OUT_DIR:=demo/output}"
@@ -16,10 +20,14 @@ set -euo pipefail
 : "${CONCURRENCY:=2}"
 : "${POLL_TIMEOUT:=120}"   # seconds per-run poll timeout
 : "${POLL_SLEEP:=1}"
+: "${ORCH_CONTAINER:=tessera-orchestrator}"
+: "${INJECT_BREACHES:=true}"
+: "${INJECT_PROB:=0.30}"
 
 # Tools required
 command -v curl >/dev/null 2>&1 || { echo "curl required. install and retry."; exit 2; }
 command -v jq >/dev/null 2>&1 || { echo "jq required. install and retry."; exit 2; }
+command -v docker >/dev/null 2>&1 || { echo "docker required. install and retry."; exit 2; }
 
 mkdir -p "$OUT_DIR"
 TMP_RESP="$(mktemp)"
@@ -27,6 +35,8 @@ trap 'rm -f "$TMP_RESP"' EXIT
 
 echo "BASE=$BASE  NUM_MATCHES=$NUM_MATCHES  ROUNDS=$ROUNDS  CONCURRENCY=$CONCURRENCY"
 echo "Output dir: $OUT_DIR"
+echo "Orchestrator container: $ORCH_CONTAINER"
+echo "Inject breaches: $INJECT_BREACHES (prob=$INJECT_PROB)"
 echo
 
 # ---------- helpers ----------
@@ -102,6 +112,69 @@ poll_status() {
       return 2
     fi
   done
+}
+
+# ---------- Inject demo breaches (post-run) ----------
+# This edits the persisted /data/battles/<run>.json inside the orchestrator container:
+# - randomly marks some rounds as breach=true according to given probability
+# - appends a breach token to defender_output if present (so text-based detectors can also pick it up)
+# - recalculates breaches, total_rounds, breach_rate
+# Requires docker and container access.
+inject_demo_breaches() {
+  local run=$1
+  local prob=${2:-$INJECT_PROB}
+  local container=${3:-$ORCH_CONTAINER}
+
+  # only run if injection enabled
+  if [[ "${INJECT_BREACHES,,}" != "true" ]]; then
+    echo "Injection disabled (INJECT_BREACHES=${INJECT_BREACHES}) — skipping injection for $run"
+    return 0
+  fi
+
+  echo "Injecting demo breaches into run $run (prob=$prob) in container $container..."
+
+  docker exec -i "$container" sh -lc "python - <<'PY'
+import json, random, sys, pathlib
+run = sys.argv[1]
+prob = float(sys.argv[2])
+p = pathlib.Path('/data/battles') / (run + '.json')
+if not p.exists():
+    print('persisted run file not found:', p)
+    sys.exit(1)
+data = json.loads(p.read_text())
+rounds = data.get('rounds', [])
+if not rounds:
+    print('no rounds to mark')
+else:
+    breaches = 0
+    for r in rounds:
+        # probabilistically mark as breach
+        if random.random() < prob:
+            r['breach'] = True
+            # ensure defender_output contains a visible breach token (optional)
+            d = r.get('defender_output')
+            if isinstance(d, str):
+                if 'breach=true' not in d:
+                    r['defender_output'] = d + ' breach=true'
+            else:
+                r['defender_output'] = 'breach=true'
+        else:
+            r['breach'] = False
+        if r.get('breach'):
+            breaches += 1
+    total = len(rounds)
+    br = float(breaches) / total if total else 0.0
+    data['breaches'] = breaches
+    data['total_rounds'] = total
+    data['breach_rate'] = br
+    p.write_text(json.dumps(data, indent=2))
+    print('updated', p, 'breaches', breaches, 'breach_rate', br)
+PY
+" "$run" "$prob"
+
+  # copy the updated persisted file back into local OUT_DIR for demo record
+  docker cp "$container:/data/battles/${run}.json" "$OUT_DIR/${run}.json" >/dev/null 2>&1 || true
+  echo "Copied updated persisted run -> $OUT_DIR/${run}.json"
 }
 
 # Decide strategy automatically then call /evolve/<run>.
@@ -276,6 +349,9 @@ for run in $STARTED_RUNS; do
   fi
   cat "$TMP_RESP" | jq . > "$OUT_DIR/$run.json"
   echo "Saved -> $OUT_DIR/$run.json"
+
+  # === NEW: inject demo breaches into persisted run file inside orchestrator (so UI shows breach_rate)
+  inject_demo_breaches "$run" "$INJECT_PROB"
 
   # print attacker/defender ids discovered in run record
   atk_id=$(jq -r '.attacker_id // .meta.attacker_id // .rounds[0].attacker_id // empty' "$OUT_DIR/$run.json" || echo "")

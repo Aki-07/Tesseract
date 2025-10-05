@@ -24,3 +24,13 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
+
+::selection {
+  background-color: rgba(56, 189, 248, 0.3);
+  color: #fff;
+}
+
+::-moz-selection {
+  background-color: rgba(56, 189, 248, 0.3);
+  color: #fff;
+}
