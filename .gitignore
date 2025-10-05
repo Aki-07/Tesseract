@@ -17,4 +17,9 @@ node_modules/
 
 # Databases
 *.db
-services/orchestrator/app/routers/multi_battle.py
+
+# Demo artifacts
+demo/
+
+# Runtime data snapshots
+data/

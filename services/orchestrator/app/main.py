@@ -1,15 +1,23 @@
+# services/orchestrator/app/main.py
 import asyncio
 import os
 import uuid
 import json
 from datetime import datetime
 from typing import Optional
-from fastapi import FastAPI, HTTPException, BackgroundTasks, Request, Response
+from fastapi import FastAPI, HTTPException, BackgroundTasks, Request
 import httpx
 import structlog
 from .routers import capsules, multi_battle
 from contextlib import asynccontextmanager
 from .db import init_db
+from .state import battle_tasks, battle_states
+from .storage import (
+    save_battle_state,
+    load_battle_state,
+    DATA_DIR as STORAGE_DATA_DIR,
+    BATTLES_DIR,
+)
 
 from .metrics import (
     metrics_endpoint,
@@ -24,12 +32,12 @@ from pydantic import BaseModel
 
 log = structlog.get_logger(__name__)
 
-
+# Lifespan
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Runs on startup and shutdown."""
     print("Starting Tesseract Orchestrator...")
-    init_db()  # create DB + tables
+    init_db()  
     yield
     print("🧩 Shutting down Orchestrator...")
 
@@ -49,21 +57,19 @@ def _name_endpoint(req: Request) -> str:
 
 
 app.middleware("http")(http_metrics_middleware(_name_endpoint))
+
 app.include_router(capsules.router)
-app.include_router(multi_battle.router)   # add this line
+app.include_router(multi_battle.router)
+
 app.get("/metrics")(metrics_endpoint())
 
-# ---- Config via env ----
+# Config via env 
 ATTACKER_URL = os.getenv("CAPSULE_ATTACKER_URL", "http://attacker-demo:9000")
 DEFENDER_URL = os.getenv("CAPSULE_DEFENDER_URL", "http://defender-demo:9000")
-DATA_DIR = os.getenv("DATA_DIR", "/data")
-BATTLES_DIR = os.path.join(DATA_DIR, "battles")
-os.makedirs(BATTLES_DIR, exist_ok=True)
-
-battle_tasks: dict[str, asyncio.Task] = {}
-battle_states: dict[str, dict] = {}
+DATA_DIR = STORAGE_DATA_DIR
 
 
+# Request model for single-run API 
 class StartBattleRequest(BaseModel):
     rounds: int = 20
     interval_seconds: float = 1.0
@@ -72,6 +78,7 @@ class StartBattleRequest(BaseModel):
     run_id: Optional[str] = None
 
 
+# Helpers to call capsules 
 async def call_capsule_tool(url: str, name: str, arguments: dict, timeout=15):
     async with httpx.AsyncClient(timeout=timeout) as client:
         resp = await client.post(
@@ -81,20 +88,7 @@ async def call_capsule_tool(url: str, name: str, arguments: dict, timeout=15):
         return resp.json()
 
 
-def save_battle_state(run_id: str):
-    path = os.path.join(BATTLES_DIR, f"{run_id}.json")
-    with open(path, "w", encoding="utf-8") as f:
-        json.dump(battle_states[run_id], f, indent=2, default=str)
-
-
-def load_battle_state(run_id: str):
-    path = os.path.join(BATTLES_DIR, f"{run_id}.json")
-    if not os.path.exists(path):
-        return None
-    with open(path, "r", encoding="utf-8") as f:
-        return json.load(f)
-
-
+# The single-run battle runner (uses storage.save_battle_state) 
 async def battle_runner(
     run_id: str,
     rounds: int,
@@ -105,7 +99,7 @@ async def battle_runner(
     state = battle_states[run_id]
     state["status"] = "running"
     state["started_at"] = datetime.utcnow().isoformat()
-    save_battle_state(run_id)
+    save_battle_state(run_id)  # persist initial
 
     # metrics: active runs +1
     BATTLE_ACTIVE.inc()
@@ -142,12 +136,7 @@ async def battle_runner(
                 lowered = def_text.lower()
                 breach = any(
                     token in lowered
-                    for token in (
-                        "safe=false",
-                        "safe: false",
-                        "allowed=false",
-                        "breach=true",
-                    )
+                    for token in ("safe=false", "safe: false", "allowed=false", "breach=true")
                 )
 
                 round_entry = {
@@ -167,11 +156,11 @@ async def battle_runner(
                 # metrics: rounds +1
                 BATTLE_ROUNDS.inc()
 
-                state["breach_rate"] = state["breaches"] / state["total_rounds"]
+                state["breach_rate"] = state["breaches"] / state["total_rounds"] if state["total_rounds"] else 0.0
                 # metrics: gauge updated
                 BREACH_RATE.set(state["breach_rate"])
 
-                save_battle_state(run_id)
+                save_battle_state(run_id)  # persist after each round
                 log.info("battle.round", run_id=run_id, round=r, breach=breach)
 
             except Exception as e:
@@ -190,6 +179,7 @@ async def battle_runner(
         BATTLE_ACTIVE.dec()
 
 
+# Health endpoint 
 @app.get("/health")
 async def health():
     return {
@@ -200,12 +190,14 @@ async def health():
     }
 
 
+# Start a single battle (legacy)
 @app.post("/battle/start")
 async def start_battle(req: StartBattleRequest, background_tasks: BackgroundTasks):
     run_id = req.run_id or str(uuid.uuid4())[:8]
     if run_id in battle_tasks:
         raise HTTPException(status_code=400, detail=f"run_id {run_id} already exists")
 
+    # seed state
     battle_states[run_id] = {
         "run_id": run_id,
         "created_at": datetime.utcnow().isoformat(),
@@ -219,6 +211,7 @@ async def start_battle(req: StartBattleRequest, background_tasks: BackgroundTask
     }
     save_battle_state(run_id)
 
+    # start runner
     task = asyncio.create_task(
         battle_runner(
             run_id,
@@ -233,6 +226,7 @@ async def start_battle(req: StartBattleRequest, background_tasks: BackgroundTask
     return {"run_id": run_id, "status": "started"}
 
 
+# ---- Stop a battle ----
 @app.post("/battle/stop/{run_id}")
 async def stop_battle(run_id: str):
     state = battle_states.get(run_id) or load_battle_state(run_id)
@@ -244,6 +238,7 @@ async def stop_battle(run_id: str):
     return {"run_id": run_id, "status": "stop_requested"}
 
 
+# ---- Check status ----
 @app.get("/battle/status/{run_id}")
 async def battle_status(run_id: str):
     state = battle_states.get(run_id) or load_battle_state(run_id)
@@ -255,12 +250,14 @@ async def battle_status(run_id: str):
     return state_copy
 
 
+# ---- List all stored battle files ----
 @app.get("/battle/list")
 async def list_battles():
     files = [f for f in os.listdir(BATTLES_DIR) if f.endswith(".json")]
     return {"runs": [f[:-5] for f in files]}
 
 
+# ---- Get a stored battle record ----
 @app.get("/battle/get/{run_id}")
 async def get_battle(run_id: str):
     state = load_battle_state(run_id)
