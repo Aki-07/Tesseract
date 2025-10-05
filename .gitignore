@@ -23,3 +23,16 @@ demo/
 
 # Runtime data snapshots
 data/
+
+# UI build artifacts
+services/ui/ui/.turbo/
+services/ui/ui/out/
+services/ui/ui/.vercel/
+services/ui/node_modules/
+
+#ui
+node_modules
+.next/cache
+.git
+.env
+*.log

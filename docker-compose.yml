@@ -58,6 +58,18 @@ services:
       - grafana_data:/var/lib/grafana
       - ./config/grafana:/etc/grafana/provisioning
 
+  ui:
+    build:
+      context: services/ui
+      dockerfile: Dockerfile 
+    container_name: tessera-ui
+    ports:
+      - "3000:3000"
+    environment:
+      - NEXT_PUBLIC_API_URL=http://orchestrator:8000
+    depends_on:
+      - orchestrator
+
 volumes:
   prometheus_data:
   grafana_data:
