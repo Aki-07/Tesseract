@@ -4,5 +4,5 @@ console.log("NEXT_PUBLIC_API_URL at runtime:", process.env.NEXT_PUBLIC_API_URL);
 const api = axios.create({
   baseURL: process.env.NEXT_PUBLIC_API_URL
 });
-
+console.log("NEXT_PUBLIC_API_URL at runtime:", api);
 export default api;
