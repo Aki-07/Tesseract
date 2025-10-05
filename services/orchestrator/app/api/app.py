@@ -40,7 +40,10 @@ def create_app() -> FastAPI:
     app.middleware("http")(http_metrics_middleware(_name_endpoint))
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=["http://localhost:3000"],  # UI port
+        allow_origins=[
+        "http://localhost:3000",                # local dev
+        "https://tesseract-ui.onrender.com",    # deployed UI
+    ],
         allow_credentials=True,
         allow_methods=["*"],
         allow_headers=["*"],
