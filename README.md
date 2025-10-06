@@ -42,6 +42,20 @@ Cerebras inference API is used as an independent **judge** that scores each roun
 
 ---
 
+
+## 📊 Observability Layer
+
+### 🧠 Prometheus
+The Orchestrator exposes internal metrics (battle rounds, breach counts, latency) at  
+**`/metrics`** endpoint, automatically scraped by Prometheus.
+
+**Example configuration (`config/prometheus/prometheus.yml`):**
+```yaml
+scrape_configs:
+  - job_name: 'tessera'
+    static_configs:
+      - targets: ['orchestrator:8080']
+
 ## 🎮 Features
 
 - 🔁 Real-time attacker vs defender battles  
