@@ -55,6 +55,7 @@ scrape_configs:
   - job_name: 'tessera'
     static_configs:
       - targets: ['orchestrator:8080']
+```
 
 ## 🎮 Features
 
