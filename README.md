@@ -1,11 +1,11 @@
-# 🧠 Tessera: The Neural Battlefield
+# Tessera: The Neural Battlefield
 
 Tessera is an AI-vs-AI simulation platform where autonomous **attackers** and **defenders**—powered by large language models (LLMs)—battle in real time.  
 Each round is orchestrated by a central intelligence layer that evaluates performance, detects breaches, and evolves the agents over time.
 
 ---
 
-## ⚙️ Architecture Overview
+## Architecture Overview
 
 - **Frontend** — Built in Next.js + TailwindCSS  
   Interactive dashboard to visualize battles, run histories, and performance metrics.
@@ -24,7 +24,7 @@ Each round is orchestrated by a central intelligence layer that evaluates perfor
 
 ---
 
-## 🧩 Sponsor Technology Highlights
+## Sponsor Technology Highlights
 
 ### 🐳 Docker MCP Gateway
 We used Docker’s **Model Context Protocol (MCP)** to dynamically spawn, register, and manage model “capsules.”  
